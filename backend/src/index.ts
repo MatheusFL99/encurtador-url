@@ -30,14 +30,29 @@ const urlSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  expiresAt: {
+    type: Date,
+    default: null,
+  },
+  clicks: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const Url = mongoose.model("Url", urlSchema);
 
 app.post("/api/shorten", async (req, res) => {
-  const { originalUrl } = req.body;
+  const { originalUrl, expiresIn } = req.body;
   const shortUrl = shortid.generate();
-  const newUrl = new Url({ originalUrl, shortUrl });
+
+  let expiresAt = null;
+  if (expiresIn && Number.isInteger(expiresIn) && expiresIn > 0) {
+    expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + expiresIn);
+  }
+
+  const newUrl = new Url({ originalUrl, shortUrl, expiresAt });
   await newUrl.save();
   res.status(201).json({ originalUrl, shortUrl });
 });
@@ -45,10 +60,30 @@ app.post("/api/shorten", async (req, res) => {
 app.get("/:shortUrl", async (req, res) => {
   const { shortUrl } = req.params;
   const url = await Url.findOne({ shortUrl });
+
   if (!url) {
     return res.status(404).json({ error: "URL not found" });
   }
+
+  if (url.expiresAt && url.expiresAt.getTime() < Date.now()) {
+    return res.status(404).json({ error: "URL expired" });
+  }
+
+  url.clicks++;
+  await url.save();
+
   res.redirect(url.originalUrl);
+});
+
+app.get("/api/url/:shortUrl", async (req, res) => {
+  const { shortUrl } = req.params;
+  const url = await Url.findOne({ shortUrl });
+
+  if (!url) {
+    return res.status(404).json({ error: "URL not found" });
+  }
+
+  res.status(200).json(url);
 });
 
 app.listen(3000, () => {

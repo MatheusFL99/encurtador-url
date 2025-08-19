@@ -28,6 +28,7 @@ h1 {
 
 form {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -57,6 +58,21 @@ button:hover {
 
 .result {
   margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.result div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.result button {
+  padding: 5px 10px;
+  font-size: 0.9rem;
 }
 
 .result p {
